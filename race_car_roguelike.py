@@ -52,6 +52,7 @@ theRoad = myRoad
 theta = 0
 brakeConstant = 5
 currentSpeed = 0
+janky = False
 
 carTravelX = 0
 carTravelY = 0
@@ -120,18 +121,22 @@ while ( stop != True):
 
     roadAngles = []
     # calculating the road's position and orientation relative to the car
-    for i in range(len(roadMap)):
-        if i > 0:
-            deltaX = roadMap[i][0] - roadMap[i-1][0]
-            deltaY = roadMap[i][1] - roadMap[i-1][1]
-            roadTheta = -math.degrees(numpy.arctan(deltaY/(deltaX + 0.0000021853)))
-            roadAngles.append(roadTheta)
 
+    if  janky != True:
+        moveRel(roadMap)
+        moveRel(skidTracks)
 
+    for i in range(len(roadMap) -1):
+        
+        deltaX = roadMap[i][0] - roadMap[i+1][0]
+        deltaY = roadMap[i][1] - roadMap[i+1][1]
+        roadTheta = -math.degrees(numpy.arctan(deltaY/(deltaX + 0.0000021853)))
+        roadAngles.append(roadTheta)
+        
 
-
-    moveRel(roadMap)
-    moveRel(skidTracks)
+    if janky:
+        moveRel(roadMap)
+        moveRel(skidTracks)
 
     #skid mark calculation
     if abs(carTheta) >= skidThreshold:
