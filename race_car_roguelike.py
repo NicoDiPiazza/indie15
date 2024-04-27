@@ -2,6 +2,7 @@ import pygame
 import keyboard
 import map_generator
 import numpy
+import math
 
 
 pygame.init()
@@ -31,8 +32,8 @@ def moveRel(graphics:list):
 
 stop = False
 dt = 100
-screenWidth = 500
-screenHeight = 500
+screenWidth = 1000
+screenHeight = 700
 screen = pygame.display.set_mode((screenWidth, screenHeight))
 
 main_font = pygame.font.SysFont('arial', 25)
@@ -42,6 +43,11 @@ carHeight = 100
 
 myCar = pygame.transform.scale(pygame.image.load('topDownCar.jpg'), (carWidth, carHeight))
 theCar = myCar
+
+roadWidth = 100
+roadHeight = 100
+myRoad = pygame.transform.scale(pygame.image.load('Preview_road.png'), (roadWidth, roadHeight))
+theRoad = myRoad
 
 theta = 0
 brakeConstant = 5
@@ -65,7 +71,8 @@ for i in range(skidLength):
 
 # Upgrades
 acceleration = 5
-maxSpeed = 50
+totalMaxSpeed = 50
+maxSpeed = totalMaxSpeed
 turningSpeed = 0.3
 responsiveness = 0
 
@@ -74,11 +81,10 @@ levelMap = map_generator.newMap()
 roadMap = []
 
 for i in range(len(levelMap) - 2):
-        #pygame.draw.rect(screen, [200, 0, 0], pygame.Rect(10 * i[0] + 100, 10 * i[1] + 100, 5, 5))
-        roadX = 100*levelMap[i][0]
-        roadY = 100*levelMap[i][1]
-        roadC = ((roadX ** 2) + (roadY ** 2)) ** (1/2)
-        roadMap.append([roadX, roadY, numpy.arctan(roadY/(roadX + 0.1)), roadC])
+    roadX = 50*levelMap[i][0]
+    roadY = 50*levelMap[i][1]
+    roadC = ((roadX ** 2) + (roadY ** 2)) ** (1/2)
+    roadMap.append([roadX, roadY, numpy.arctan(roadY/(roadX + 0.1)), roadC])
 
 
 # main loop
@@ -111,7 +117,17 @@ while ( stop != True):
     
     theCar = pygame.transform.rotate(myCar, carTheta)
 
+
+    roadAngles = []
     # calculating the road's position and orientation relative to the car
+    for i in range(len(roadMap)):
+        if i > 0:
+            deltaX = roadMap[i][0] - roadMap[i-1][0]
+            deltaY = roadMap[i][1] - roadMap[i-1][1]
+            roadTheta = -math.degrees(numpy.arctan(deltaY/(deltaX + 0.0000021853)))
+            roadAngles.append(roadTheta)
+
+
 
 
     moveRel(roadMap)
@@ -136,23 +152,41 @@ while ( stop != True):
     
 
 
-
-
     #graphics
     
     pygame.draw.rect(screen, [200, 200, 200], pygame.Rect(0, 0, screenWidth, screenHeight))
-    screen.blit(theCar, (screenWidth/2 - theCar.get_width()/2, screenHeight/2 - theCar.get_height()/2))
-    screen.blit(main_font.render(str(currentSpeed), True, [0, 0, 0]), [screenWidth * 0.3, screenHeight * 0.85])
 
+    roadIndex = 0
+    tooFarAway = True
+    maxSpeed = totalMaxSpeed
     for i in roadMap:
+        
         if i == roadMap[0]:
             pygame.draw.rect(screen, [0, 200, 0], pygame.Rect(i[0] + origin,i[1] + origin, 30, 30))
+
         else:
             pygame.draw.rect(screen, [200, 0, 0], pygame.Rect(i[0] + origin,i[1] + origin, 5, 5))
+            theRoad = pygame.transform.rotate(myRoad, roadAngles[roadIndex])
+            screen.blit(theRoad, (i[0] + origin - theRoad.get_width()/2, i[1] + origin - theRoad.get_height()/2))
+            roadIndex = roadIndex + 1
+        if((i[0]**2)+(i[1]**2))**(1/2) <= roadWidth:
+            tooFarAway = False
 
+    if tooFarAway:
+        maxSpeed = 10
+        
+        
+    
     for i in range(len(skidTracks)-1):
         if i>0:
             pygame.draw.line(screen, [0, 0, 0], (skidTracks[i-1][0] + origin,skidTracks[i-1][1] + origin), (skidTracks[i][0] + origin,skidTracks[i][1] + origin), 3)
+    
+        
+    screen.blit(theCar, (origin - theCar.get_width()/2, origin - theCar.get_height()/2))
+    screen.blit(main_font.render(str(currentSpeed), True, [0, 0, 0]), [screenWidth * 0.3, screenHeight * 0.85])
+
+
+
     
 
     #time between each frame
